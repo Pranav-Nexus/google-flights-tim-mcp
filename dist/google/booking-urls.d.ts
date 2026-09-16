@@ -1,0 +1,3 @@
+export declare const buildGoogleFlightsUrl: (origin: string, destination: string, departureDate: string, returnDate?: string | null, cabinClass?: string, currency?: string) => string;
+export declare const buildFlightSpecificBookingUrl: (origin: string, destination: string, departureDate: string, returnDate: string | null, airlineCode: string, flightNumber: string, currency?: string) => string;
+//# sourceMappingURL=booking-urls.d.ts.map

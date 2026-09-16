@@ -1,0 +1,1 @@
+{"version":3,"file":"nearby-airports.d.ts","sourceRoot":"","sources":["../../src/tools/nearby-airports.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,CAAC,EAAE,MAAM,KAAK,CAAC;AAExB,OAAO,EAAW,KAAK,MAAM,EAAE,MAAM,kBAAkB,CAAC;AAExD,eAAO,MAAM,oBAAoB;;;;;;;;;EAa/B,CAAC;AAEH,eAAO,MAAM,oBAAoB,GAC/B,QAAQ,CAAC,CAAC,KAAK,CAAC,OAAO,oBAAoB,CAAC,KAC3C,OAAO,CAAC,MAAM,CAAC,MAAM,CAAC,CAoBxB,CAAC"}

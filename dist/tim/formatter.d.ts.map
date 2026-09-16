@@ -1,0 +1,1 @@
+{"version":3,"file":"formatter.d.ts","sourceRoot":"","sources":["../../src/tim/formatter.ts"],"names":[],"mappings":"AAEA,OAAO,KAAK,EAAE,qBAAqB,EAAE,YAAY,EAAE,MAAM,YAAY,CAAC;AAEtE,eAAO,MAAM,wBAAwB,GACnC,WAAW,qBAAqB,KAC/B,MAEF,CAAC;AAEF,eAAO,MAAM,kBAAkB,GAAI,KAAK,YAAY,KAAG,MAQtD,CAAC;AAEF,eAAO,MAAM,2BAA2B,GACtC,aAAa,MAAM,EACnB,WAAW,qBAAqB,KAC/B,MA2BF,CAAC"}

@@ -1,0 +1,38 @@
+{
+  "name": "google-flights-tim-mcp",
+  "version": "1.0.0",
+  "description": "Unified Google Flights MCP with Travel Impact Model (TIM) carbon footprint calculations, advanced multi-airport filters, and 100/100 mcp-verify readiness.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "google-flights-tim-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').mkdirSync('dist/data', {recursive: true}); require('fs').copyFileSync('src/data/airports.json', 'dist/data/airports.json')\"",
+    "prepare": "npm run build",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "google-flights",
+    "travel-impact-model",
+    "carbon-footprint",
+    "emissions",
+    "flights"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}

@@ -1,0 +1,1 @@
+{"version":3,"file":"price-history.d.ts","sourceRoot":"","sources":["../../src/tools/price-history.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,CAAC,EAAE,MAAM,KAAK,CAAC;AAGxB,OAAO,EAAM,KAAK,MAAM,EAAE,MAAM,kBAAkB,CAAC;AAEnD,eAAO,MAAM,kBAAkB;;;;;;;;;;;;;;;EAK7B,CAAC;AAEH,eAAO,MAAM,kBAAkB,GAC7B,QAAQ,CAAC,CAAC,KAAK,CAAC,OAAO,kBAAkB,CAAC,KACzC,OAAO,CAAC,MAAM,CAAC,MAAM,CAAC,CAmCxB,CAAC"}

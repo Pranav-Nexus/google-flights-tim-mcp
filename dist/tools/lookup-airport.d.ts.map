@@ -1,0 +1,1 @@
+{"version":3,"file":"lookup-airport.d.ts","sourceRoot":"","sources":["../../src/tools/lookup-airport.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,CAAC,EAAE,MAAM,KAAK,CAAC;AAExB,OAAO,EAAM,KAAK,MAAM,EAAE,MAAM,kBAAkB,CAAC;AAEnD,eAAO,MAAM,mBAAmB;;;;;;EAO9B,CAAC;AAEH,eAAO,MAAM,mBAAmB,GAC9B,QAAQ,CAAC,CAAC,KAAK,CAAC,OAAO,mBAAmB,CAAC,KAC1C,OAAO,CAAC,MAAM,CAAC,MAAM,CAAC,CAiBxB,CAAC"}
