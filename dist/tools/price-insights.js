@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { searchFlights } from "../google/client.js";
 import { TripType, SeatType, SortBy, MaxStops, } from "../google/types.js";
+import { formatPrice } from "../lib/format.js";
 import { ok } from "../lib/result.js";
 export const priceInsightsSchema = z.object({
     origin: z.string().min(3).describe("Departure airport IATA code (e.g., 'JFK')"),
@@ -39,17 +40,20 @@ export const handlePriceInsights = async (params) => {
         : ctx.assessment === "high"
             ? "⚠️ Prices are currently HIGHER than usual. If dates are flexible, consider tracking this route or delaying booking."
             : "⚖️ Prices are currently TYPICAL for this route.";
+    const currency = res.value.tag === "flights"
+        ? res.value.flights[0]?.currency
+        : res.value.combos[0]?.[0]?.currency;
     const diffStr = ctx.priceDifference < 0
-        ? `$${Math.abs(ctx.priceDifference)} cheaper than typical`
+        ? `${formatPrice(Math.abs(ctx.priceDifference), currency)} cheaper than typical`
         : ctx.priceDifference > 0
-            ? `$${ctx.priceDifference} more expensive than typical`
+            ? `${formatPrice(ctx.priceDifference, currency)} more expensive than typical`
             : "at the typical rate";
     const output = [
         `=== Google Flights Price Insights ===`,
         `Route: ${params.origin.toUpperCase()} -> ${params.destination.toUpperCase()} (${params.departureDate})`,
         `Current Price Assessment: ${ctx.assessment.toUpperCase()} (${diffStr})`,
-        `Typical Market Price: $${ctx.typicalPrice}`,
-        `Observed Price Range: $${ctx.lowPrice} - $${ctx.highPrice}`,
+        `Typical Market Price: ${formatPrice(ctx.typicalPrice, currency)}`,
+        `Observed Price Range: ${formatPrice(ctx.lowPrice, currency)} - ${formatPrice(ctx.highPrice, currency)}`,
         ``,
         `Booking Recommendation:`,
         advice,

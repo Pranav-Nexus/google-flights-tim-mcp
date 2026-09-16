@@ -100,6 +100,10 @@ export type SearchMetadata = {
     }[];
 };
 export type FlightCombo = readonly FlightResult[];
+export type FetchResult = {
+    readonly flights: readonly FlightResult[];
+    readonly metadata: SearchMetadata;
+};
 export type SearchResult = {
     readonly tag: "flights";
     readonly flights: readonly FlightResult[];

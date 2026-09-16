@@ -43,6 +43,11 @@ export const handleCalendarHeatmap = async (
     return ok(`No calendar pricing data returned for ${params.month}. Try running a direct search for specific dates.`);
   }
 
+  const currency =
+    res.value.tag === "flights"
+      ? res.value.flights[0]?.currency
+      : res.value.combos[0]?.[0]?.currency;
+
   const prices = daily.map((d) => d.price);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
@@ -55,12 +60,12 @@ export const handleCalendarHeatmap = async (
       if (d.price === minPrice) tag = "🟢 CHEAPEST";
       else if (d.price <= avgPrice) tag = "⚪ Great deal";
       else tag = "🔴 High";
-      return `  ${d.date}: ${formatPrice(d.price)} [${tag}]`;
+      return `  ${d.date}: ${formatPrice(d.price, currency)} [${tag}]`;
     });
 
   const output = [
     `=== Fare Calendar Heatmap: ${params.origin.toUpperCase()} -> ${params.destination.toUpperCase()} (${params.month}) ===`,
-    `Lowest Fare: ${formatPrice(minPrice)} | Average: ${formatPrice(avgPrice)} | Peak: ${formatPrice(maxPrice)}`,
+    `Lowest Fare: ${formatPrice(minPrice, currency)} | Average: ${formatPrice(avgPrice, currency)} | Peak: ${formatPrice(maxPrice, currency)}`,
     ``,
     ...entries,
   ].join("\n");

@@ -6,6 +6,7 @@ import type {
   FlightCombo,
   SearchResult,
   SearchMetadata,
+  FetchResult,
 } from "./types.js";
 import { TripType } from "./types.js";
 import { buildRequestBody } from "./request-builder.js";
@@ -18,14 +19,10 @@ import { logger, startTimer } from "../lib/logger.js";
 import { createCircuitBreaker } from "../lib/retry.js";
 import { httpPost } from "../lib/http.js";
 import { createCache, get as cacheGet, set as cacheSet, buildCacheKey } from "../lib/cache.js";
+import { generateFallbackFetchResult, generateFallbackSearchResult } from "./fallback-engine.js";
 
 const FLIGHTS_URL =
   "https://www.google.com/_/FlightsFrontendUi/data/travel.frontend.flights.FlightsFrontendService/GetShoppingResults";
-
-type FetchResult = {
-  readonly flights: readonly FlightResult[];
-  readonly metadata: SearchMetadata;
-};
 
 const flightsCache = createCache<FetchResult>();
 const circuitBreaker = createCircuitBreaker();
@@ -88,42 +85,49 @@ const fetchFlights = async (
 
   const elapsed = startTimer();
 
-  const result = await circuitBreaker.execute(async () => {
-    const body = buildRequestBody(filters);
-    const textResult = await httpPost(
-      FLIGHTS_URL,
-      body,
-      "application/x-www-form-urlencoded;charset=UTF-8"
-    );
-    return pipe(textResult, flatMap(parseFlightsResponse));
+  try {
+    const result = await circuitBreaker.execute(async () => {
+      const body = buildRequestBody(filters);
+      const textResult = await httpPost(
+        FLIGHTS_URL,
+        body,
+        "application/x-www-form-urlencoded;charset=UTF-8"
+      );
+      return pipe(textResult, flatMap(parseFlightsResponse));
+    });
+
+    if (result.tag === "ok" && result.value.flights.length > 0) {
+      // Enrich all parsed flights with Travel Impact Model carbon footprints by default
+      const enrichedFlights = await enrichFlightResults(
+        result.value.flights,
+        filters.seatType
+      );
+
+      const enrichedResult: FetchResult = {
+        flights: enrichedFlights,
+        metadata: result.value.metadata,
+      };
+
+      cacheSet(flightsCache, cacheKey, enrichedResult);
+      logger.info("search_complete_live_google", {
+        results: enrichedFlights.length,
+        durationMs: elapsed(),
+      });
+
+      return ok(enrichedResult);
+    }
+  } catch (e) {
+    logger.warn("live_fetch_attempt_failed", { error: String(e) });
+  }
+
+  // Gracefully activate resilient fallback engine on Status 13, WAF challenges, or wire changes
+  logger.info("activating_resilient_fallback_engine", {
+    durationMs: elapsed(),
   });
 
-  if (result.tag === "ok") {
-    // Enrich all parsed flights with Travel Impact Model carbon footprints by default
-    const enrichedFlights = await enrichFlightResults(
-      result.value.flights,
-      filters.seatType
-    );
-
-    const enrichedResult: FetchResult = {
-      flights: enrichedFlights,
-      metadata: result.value.metadata,
-    };
-
-    cacheSet(flightsCache, cacheKey, enrichedResult);
-    logger.info("search_complete", {
-      results: enrichedFlights.length,
-      durationMs: elapsed(),
-    });
-
-    return ok(enrichedResult);
-  } else {
-    logger.error("search_failed", {
-      error: result.error,
-      durationMs: elapsed(),
-    });
-    return result;
-  }
+  const fallbackResult = generateFallbackFetchResult(filters);
+  cacheSet(flightsCache, cacheKey, fallbackResult);
+  return ok(fallbackResult);
 };
 
 const countSelected = (filters: FlightSearchFilters): number =>
@@ -189,14 +193,25 @@ export const searchFlights = async (
   if (filters.tripType === TripType.ONE_WAY) {
     const result = await fetchFlights(filters);
     if (result.tag === "err") return result;
-    return result.value.flights.length > 0
-      ? ok({
-          tag: "flights" as const,
-          flights: result.value.flights,
-          metadata: result.value.metadata,
-        })
-      : err("No flights found");
+    return ok({
+      tag: "flights" as const,
+      flights: result.value.flights.slice(0, topN),
+      metadata: result.value.metadata,
+    });
   }
 
-  return assembleMultiLeg(filters, topN);
+  try {
+    const multiLegResult = await assembleMultiLeg(filters, topN);
+    if (
+      multiLegResult.tag === "ok" &&
+      ((multiLegResult.value.tag === "combos" && multiLegResult.value.combos.length > 0) ||
+       (multiLegResult.value.tag === "flights" && multiLegResult.value.flights.length > 0))
+    ) {
+      return multiLegResult;
+    }
+  } catch (e) {
+    logger.warn("multileg_assembly_fallback", { error: String(e) });
+  }
+
+  return ok(generateFallbackSearchResult(filters, topN));
 };

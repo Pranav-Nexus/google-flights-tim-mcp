@@ -103,7 +103,10 @@ const formatLeg = (leg) => {
         leg.seatPitch ? `seat pitch: ${leg.seatPitch}` : null,
     ].filter(Boolean);
     const extraStr = extras.length > 0 ? ` [${extras.join(", ")}]` : "";
-    return `    ${leg.airline} ${leg.flightNumber}: ${leg.departureAirport} ${dep} -> ${leg.arrivalAirport} ${arr} (${formatDuration(leg.duration)})${extraStr}`;
+    const fNum = leg.flightNumber.startsWith(leg.airline)
+        ? leg.flightNumber
+        : `${leg.airline} ${leg.flightNumber}`;
+    return `    ${fNum}: ${leg.departureAirport} ${dep} -> ${leg.arrivalAirport} ${arr} (${formatDuration(leg.duration)})${extraStr}`;
 };
 const formatFlightResult = (flight, index) => {
     const legs = flight.legs.map(formatLeg).join("\n");
@@ -118,13 +121,14 @@ const formatFlightResult = (flight, index) => {
     const booking = flight.bookingUrl ? `\n    Booking: ${flight.bookingUrl}` : "";
     return `Flight ${index + 1}: ${price} | ${formatDuration(flight.duration)} | ${flight.stops} stop(s)${carbonTag}\n${legs}${booking}`;
 };
-const formatPriceContext = (ctx) => {
+const formatPriceContext = (ctx, currency = "USD") => {
+    const curr = currency ?? "USD";
     const diff = ctx.priceDifference < 0
-        ? `$${Math.abs(ctx.priceDifference)} below typical`
+        ? `${formatPrice(Math.abs(ctx.priceDifference), curr)} below typical`
         : ctx.priceDifference > 0
-            ? `$${ctx.priceDifference} above typical`
+            ? `${formatPrice(ctx.priceDifference, curr)} above typical`
             : "at typical price";
-    return `Price assessment: ${ctx.assessment.toUpperCase()} (${diff}). Range: $${ctx.lowPrice} - $${ctx.highPrice}, typical: $${ctx.typicalPrice}`;
+    return `Price assessment: ${ctx.assessment.toUpperCase()} (${diff}). Range: ${formatPrice(ctx.lowPrice, curr)} - ${formatPrice(ctx.highPrice, curr)}, typical: ${formatPrice(ctx.typicalPrice, curr)}`;
 };
 const buildFilters = (params) => {
     const isRoundTrip = params.returnDate !== undefined;
@@ -182,22 +186,29 @@ const sortFlights = (flights, sortBy) => {
 };
 const formatSearchResult = (result, params) => {
     const max = params.maxResults ?? 5;
+    const currency = result.tag === "combos"
+        ? result.combos[0]?.[0]?.currency
+        : result.flights[0]?.currency;
     const priceCtx = result.metadata.priceContext
-        ? `\n${formatPriceContext(result.metadata.priceContext)}\n`
+        ? `\n${formatPriceContext(result.metadata.priceContext, currency)}\n`
         : "";
     if (result.tag === "combos") {
         const lines = result.combos.slice(0, max).map((combo, i) => {
+            const totalPrice = combo.reduce((sum, f) => sum + f.price, 0);
+            const totalCarbonKg = combo.reduce((sum, f) => sum + (f.carbonFootprint?.totalEmissionsKg ?? 0), 0);
             const parts = combo.map((flight, j) => {
                 const label = j === 0 ? "Outbound" : "Return";
                 return `  ${label}:\n${formatFlightResult(flight, 0)}`;
             });
-            return `--- Option ${i + 1} ---\n${parts.join("\n")}`;
+            return `--- Option ${i + 1} (Total Fare: ${formatPrice(totalPrice, combo[0]?.currency)} | Round-Trip CO2: ~${totalCarbonKg} kg) ---\n${parts.join("\n")}`;
         });
-        return `Round-trip flights: ${params.origin} <-> ${params.destination}\nDates: ${params.departureDate} to ${params.returnDate}${priceCtx}\n${lines.join("\n\n")}`;
+        const paxStr = `${params.adults ?? 1} adult(s)${params.children ? `, ${params.children} child(ren)` : ""}`;
+        return `Round-trip flights: ${params.origin} <-> ${params.destination}\nDates: ${params.departureDate} to ${params.returnDate} | Passengers: ${paxStr}${priceCtx}\n${lines.join("\n\n")}`;
     }
     const sortedFlights = sortFlights(result.flights, params.sortBy ?? "best");
     const lines = sortedFlights.slice(0, max).map(formatFlightResult);
-    return `Flights from ${params.origin} to ${params.destination} on ${params.departureDate}:${priceCtx}\n${lines.join("\n\n")}`;
+    const paxStr = `${params.adults ?? 1} adult(s)${params.children ? `, ${params.children} child(ren)` : ""}`;
+    return `Flights from ${params.origin} to ${params.destination} on ${params.departureDate} | Passengers: ${paxStr}:${priceCtx}\n${lines.join("\n\n")}`;
 };
 export const handleSearchFlights = async (params) => {
     const filters = buildFilters(params);
